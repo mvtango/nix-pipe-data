@@ -6,9 +6,9 @@ counter.py -- command line data science in python
 USAGE: counter.py regexp  <FILE
 
 counter.py will match the regular expresion against every line in STDIN, count the time
-the expression and each subexpression is matched and output the counts as CSV file.
-Subexpressions are regular expression groups and named groups as defined
-in https://docs.python.org/3/howto/regex.html.
+each variant of the expression is matched and output the counts as CSV file.
+Subexpressions (regular expression groups and named groups) are treated the same way.
+(See https://docs.python.org/3/howto/regex.html for those).
 
 EXAMPLES
 
