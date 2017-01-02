@@ -6,18 +6,18 @@ counter.py -- command line data science in python
 USAGE: counter.py regexp  <FILE
 
 counter.py will match the regular expresion against every line in STDIN, count the time
-the expression and each subexpression is matched and output the counts into as CSV file.
+the expression and each subexpression is matched and output the counts as CSV file.
 Subexpressions are regular expression groups and named groups as defined
 in https://docs.python.org/3/howto/regex.html.
 
 EXAMPLES
 
- LC_ALL=C ls ~ -l  | counter.py 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Dec'
+ LC_ALL=C ls ~ -l  | python3 counter.py 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Dec'
 
 will give you a stat of the months the files in your home directory were created.
 
 
- LC_ALL=C ls ~ -l  | counter.py '(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Dec)  ?\d\d  ?(?P<year>2\d\d\d)'
+ LC_ALL=C ls ~ -l  | python3 counter.py '(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Dec)  ?\d\d  ?(?P<year>2\d\d\d)'
 
 will give you the stat of months and years.
 
