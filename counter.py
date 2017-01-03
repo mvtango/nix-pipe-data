@@ -5,9 +5,9 @@ counter.py -- command line data science in python
 
 USAGE: counter.py regexp  <FILE
 
-counter.py will match the regular expresion against every line in STDIN, count the time
-each variant of the expression is matched and output the counts as CSV file.
-Subexpressions (regular expression groups and named groups) are treated the same way.
+counter.py will match the regular expresion against every line in STDIN, and count the lines
+each string matching the expression is found. The counts are output as CSV file.
+Subexpressions (regular expression groups and named groups) are counted separately.
 (See https://docs.python.org/3/howto/regex.html for those).
 
 EXAMPLES
@@ -19,7 +19,22 @@ will give you a stat of the months the files in your home directory were created
 
  LC_ALL=C ls ~ -l  | python3 counter.py '(?P<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Dec)  ?\d\d  ?(?P<year>2\d\d\d)'
 
-will give you the stat of months and years in the named regular expression groups.
+will give you the stats of months and years in the named regular expression groups.
+
+
+SORTING BY _SUFFIX
+
+The stats are sorted by value - the string that was found most frequently at the top. If you want to sort
+by the string found (=key) instead, append a "_k" to the name of the named group.
+
+Example:
+
+    cat /var/log/apache2/access.log | ./counter.py '(?P<time_k>03/Jan/2017:\d\d:)'
+
+will give you a per-hour count of the requests logged in your webserver log on Jan. 3rd 2017, ordered by hour.
+(You will need a server log at the specified location containing requests for Jan. 3rd 2017 for this to work).
+You can use the suffix "_kn" if you want to sort numerically. This works by converting the strings to the python
+type float first.
 
 
 DESCRIPTIVE STATISTICS
@@ -50,6 +65,12 @@ except ImportError :
     has_pandas=False
 
 
+def float_or_zero(v) :
+    try :
+        return float(v)
+    except ValueError :
+        return 0.0
+
 def process(ex) :
     rex=re.compile(ex)
     c=defaultdict(lambda: Counter())
@@ -69,16 +90,27 @@ def process(ex) :
     f=csv.writer(sys.stdout)
     firstwritten=False
     for (k,v) in c.items() :
-        table=sorted(list(v.items()), key=lambda a: a[1],reverse=True)
         nt=str(k).split("_")
+        sorter=lambda a : a[1]
+        realkey=k
+        if len(nt)==2 :
+            realkey=nt[0]
+            if nt[1]=="k" :
+                sorter=lambda a : a[0]
+            elif nt[1]=="kn" :
+                sorter=lambda a: float_or_zero(a[0])
+            elif has_pandas and nt[1] in np.sctypeDict.keys() :
+                pass
+            else :
+                sys.stderr.write("key suffix _{} not recognized. Possible values: _k (sort by key), _kn (sort numerically)\n".format(nt[1]))
+                realkey=k
+        table=sorted(list(v.items()), key=sorter ,reverse=True)
         # group name ends in _int, _float or similar: Descriptive Stats with Pandas etc.
-        if len(nt)>1 and nt[1] in np.sctypeDict.keys() :
+        if has_pandas and len(nt)>1 and nt[1] in np.sctypeDict.keys() :
             if has_pandas :
                 cf=getattr(np,nt[1])
                 se=pd.Series([a for a in convert_or_na(table,cf)],dtype=cf, name=nt[0])
                 sys.stderr.write(str(se.describe())+"\n")
-            else :
-                sys.stderr.write("Can't write descriptive stats for {}. Please install pandas and numpy.".format(k))
         else :
         # normal behaviour
             total = 0
@@ -88,7 +120,7 @@ def process(ex) :
                 f.writerow(['group','match','count','percent'])
                 firstwritten=True
             for r in table :
-                rr=[k]
+                rr=[realkey]
                 rr.extend(r)
                 rr.append("%.2f%%" % ((100.0*r[-1])/total))
                 f.writerow(rr)
