@@ -124,7 +124,7 @@ def process(ex) :
                 rr.extend(r)
                 rr.append("%.2f%%" % ((100.0*r[-1])/total))
                 f.writerow(rr)
-            rr=[k,'total',total,'100.00%']
+            rr=[realkey,'total',total,'100.00%']
             f.writerow(rr)
 
 
