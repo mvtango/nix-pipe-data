@@ -1,4 +1,4 @@
-REMOTE := mvirtel@vm:/home/mvirtel/projekte/
+REMOTE := mvirtel@vm-hetzner:/home/mvirtel/projekte/
 
 .PHONY: deploy
 
