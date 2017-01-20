@@ -34,7 +34,7 @@ Example:
 will give you a per-hour count of the requests logged in your webserver log on Jan. 3rd 2017, ordered by hour.
 (You will need a server log at the specified location containing requests for Jan. 3rd 2017 for this to work).
 You can use the suffix "_kn" if you want to sort numerically. This works by converting the strings to the python
-type float first.
+type float first. "_kd" would convert them to datetime values using pandas.to_datetime if pandas is installed.
 
 
 
@@ -90,6 +90,8 @@ def float_or_zero(v) :
     except ValueError :
         return 0.0
 
+
+
 def process(*args,join=None,sample=False) :
     rex=[]
     for rx in args :
@@ -102,30 +104,30 @@ def process(*args,join=None,sample=False) :
         valuedict=OrderedDict()
         line=line[:-1]
         for (rxc,rx) in enumerate(rex) :
-            m=rx.search(line)
-            if len(rex)==0 :
-                rxc_key=""
-            else :
-                rxc_key="%d_" % (rxc+1,)
-            if m :
-                for (k,v) in m.groupdict().items() :
-                    c[k].update({ v : 1 })
-                    valuedict[k]=v
-                    processed.add(v)
-                    if sample and v not in samples[k]:
-                        samples[k][v]=line
-                for g in enumerate(m.groups()) :
-                    if g[1] not in processed :
-                        gkey="%s%s" % (rxc_key,g[0]+1)
-                        c[gkey].update({g[1] : 1 })
-                        processed.add(g[1])
-                        valuedict[gkey]=g[1]
-                        if sample and g[1] not in samples[gkey] :
-                            samples[gkey][g[1]]=line
-                if len(processed)==0 :
-                    c[0].update({m.group() : 1 })
-                    if sample and m.group() not in samples[0] :
-                        samples[0][m.group()]=line
+            for m in rx.finditer(line) :
+                if len(rex)==0 :
+                    rxc_key=""
+                else :
+                    rxc_key="%d_" % (rxc+1,)
+                if m :
+                    for (k,v) in m.groupdict().items() :
+                        c[k].update({ v : 1 })
+                        valuedict[k]=v
+                        processed.add(v)
+                        if sample and v not in samples[k]:
+                            samples[k][v]=line
+                    for g in enumerate(m.groups()) :
+                        if g[1] not in processed :
+                            gkey="%s%s" % (rxc_key,g[0]+1)
+                            c[gkey].update({g[1] : 1 })
+                            processed.add(g[1])
+                            valuedict[gkey]=g[1]
+                            if sample and g[1] not in samples[gkey] :
+                                samples[gkey][g[1]]=line
+                    if len(processed)==0 :
+                        c[0].update({m.group() : 1 })
+                        if sample and m.group() not in samples[0] :
+                            samples[0][m.group()]=line
         if join :
             jk="join"
             jv=",".join([str(valuedict.get(a,None)) for a in join])
@@ -133,18 +135,19 @@ def process(*args,join=None,sample=False) :
             if sample and jv not in samples[jk] :
                 samples[jk][jv]=line
     f=csv.writer(sys.stdout)
-    firstwritten=False
     for (k,v) in c.items() :
         nt=str(k).split("_")
         sorter=lambda a : a[1]
         realkey=k
-        # group name ends in _k or _kn - sort by key, sort by key numerically
+        # group name ends in _k or _kn or _kd - sort by key, sort by key numerically, sort by key as date
         if len(nt)==2 :
             realkey=nt[0]
             if nt[1]=="k" :
                 sorter=lambda a : a[0]
             elif nt[1]=="kn" :
                 sorter=lambda a: float_or_zero(a[0])
+            elif nt[1]=="kd" and has_pandas :
+                sorter=lambda a: pd.to_datetime(a[0])
             elif has_pandas and nt[1] in np.sctypeDict.keys() :
                 pass
             else :
@@ -177,12 +180,10 @@ def process(*args,join=None,sample=False) :
             total = 0
             for r in table :
                 total += int(r[-1])
-            if not firstwritten :
-                headers=['group','match','count','percent']
-                if sample :
-                    headers.append("sample")
-                f.writerow(headers)
-                firstwritten=True
+            headers=['group','match','count','percent']
+            if sample :
+                headers.append("sample")
+            f.writerow(headers)
             for r in table :
                 rr=[realkey]
                 rr.extend(r)
