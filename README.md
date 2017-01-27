@@ -1,7 +1,7 @@
-# counter.py
+# UNIX pipe fittings for statistics
 
 In the quest for [command line data science](https://github.com/jeroenjanssens/data-science-at-the-command-line), 
-this kit contains three command line utilities intended to be used as UNIX pipes.
+this kit contains three command line utilities intended to be used in UNIX pipes.
 
 ## counter.py
 
@@ -9,8 +9,7 @@ Is a regular expression counter filter. Please see docstring for further help.
 
 ## groupby.py
 
-Concatenates lines from stdin that match a regular expressio. Please see docstring.
-
+Concatenates lines from stdin that match a regular expression. Please see docstring.
 
 ## extract.py
 
