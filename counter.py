@@ -104,7 +104,7 @@ def process(*args,join=None,sample=False) :
         valuedict=OrderedDict()
         line=line[:-1]
         for (rxc,rx) in enumerate(rex) :
-            for m in rx.finditer(line) :
+            for m in [rx.search(line),] :
                 if len(rex)==0 :
                     rxc_key=""
                 else :
@@ -134,7 +134,13 @@ def process(*args,join=None,sample=False) :
             c[jk].update({ jv : 1 })
             if sample and jv not in samples[jk] :
                 samples[jk][jv]=line
+            for k in join :
+                if not k in valuedict :
+                    c[k].update({ None : 1 })
+                    if sample and None not in samples[k] :
+                        samples[k][None]=line
     f=csv.writer(sys.stdout)
+    lookup=dict()
     for (k,v) in c.items() :
         nt=str(k).split("_")
         sorter=lambda a : a[1]
@@ -162,19 +168,8 @@ def process(*args,join=None,sample=False) :
                 sys.stderr.write(str(se.describe())+"\n")
         # group name is "join" - separate joined key into columns
         if k == "join" :
-            joincolumns=["join"]
-            joincolumns.extend(join)
-            joincolumns.append("count")
-            if sample :
-                joincolumns.append("sample")
-            jointable=[]
-            for row in table :
-                trow=["join"]
-                trow.extend(row[0].split(","))
-                trow.append(row[1])
-                if sample :
-                    trow.append(samples["join"][row[0]])
-                jointable.append(trow)
+            jointable=table
+            continue
         else :
         # normal behaviour
             total = 0
@@ -193,10 +188,28 @@ def process(*args,join=None,sample=False) :
                 f.writerow(rr)
             rr=[realkey,'total',total,'100.00%']
             f.writerow(rr)
+            if join is not None and k in join :
+                lookup[k]=dict([(r[0],r[1]) for r in table])
     if join :
+        joincolumns=["join"]
+        joincolumns.extend(join)
+        joincolumns.append("count")
+        for k in join :
+            if k in lookup :
+                joincolumns.append("%s_sum" % k)
+        if sample :
+            joincolumns.append("sample")
         f.writerow(joincolumns)
-        for row in jointable :
-            f.writerow(row)
+        for row in jointable:
+            trow=["join"]
+            trow.extend(row[0].split(","))
+            trow.append(row[1])
+            for i,k in enumerate(join) :
+                if k in lookup :
+                    trow.append(lookup[k].get(trow[i+1],None))
+            if sample :
+                trow.append(samples["join"][row[0]])
+            f.writerow(trow)
 
 
 
