@@ -231,7 +231,7 @@ def convert_or_na(table,conv) :
 
 
 if __name__=='__main__' :
-    if len(sys.argv)<2 :
+    if len(sys.argv)<2 or sys.argv[1].find("-h")>-1 :
         print(__doc__)
     else :
         args=set(sys.argv)

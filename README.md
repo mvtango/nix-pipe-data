@@ -9,7 +9,7 @@ Is a regular expression counter filter. Please see docstring for further help.
 
 ## groupby.py
 
-Concatenates lines from stdin that match a regular expressio. Please see docstring.
+Concatenates lines from stdin that match a regular expression. Please see docstring.
 
 
 ## extract.py
